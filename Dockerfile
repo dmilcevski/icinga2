@@ -41,6 +41,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
       unzip \
       wget \
       libdbd-mysql-perl \
+      postgresql-client \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
