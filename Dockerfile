@@ -42,6 +42,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
       wget \
       libdbd-mysql-perl \
       postgresql-client \
+      netcat \
+      jq \
+      libwww-perl \
+      libjson-perl \
+      libdatetime-perl \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
