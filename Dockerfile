@@ -47,6 +47,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
       libwww-perl \
       libjson-perl \
       libdatetime-perl \
+      default-jre \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
@@ -69,6 +70,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
+
+
 ARG GITREF_DIRECTOR=master
 ARG GITREF_MODGRAPHITE=master
 ARG GITREF_MODAWS=master
@@ -90,6 +93,46 @@ RUN mkdir -p /usr/local/share/icingaweb2/modules/ \
  && unzip -d /usr/local/share/icingaweb2/modules/aws/library/vendor/aws aws.zip \
  && rm aws.zip \
  && true
+
+ENV PATH $PATH:/usr/lib/nagios/plugins/nagios-plugins
+
+# Download Cassandra but don't install it. Needed to use nodetool to check cassandra connections
+ARG CASSANDRA_VERSION=3.11.0
+ARG TAR="apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz"
+
+RUN mkdir -p /opt/cassandra/ \
+  && wget -q --no-cookies -O - "http://archive.apache.org/dist/cassandra/${CASSANDRA_VERSION}/${TAR}" \
+  | tar xz --strip-components=1 --directory=/opt/cassandra/ --exclude=.gitignore -f - \
+  && rm -fv "${TAR}" \
+  && true
+
+
+
+#Install custom nagios plugins from git repository
+RUN bash -c ' \
+    export DEBIAN_FRONTEND=noninteractive && \
+    set -euxo pipefail && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends git make && \
+    cd /usr/lib/nagios/plugins/ && \
+    git clone https://github.com/dmilcevski/nagios-plugins.git && \
+    cd nagios-plugins/ && \
+    git submodule update --init --recursive --remote && \
+    git submodule foreach git checkout master && \
+    make build zookeeper \
+    #make apt-packages-remove && \
+    #apt-get autoremove -y && \
+    #apt-get clean \
+    # run tests after autoremove to check that no important packages we need get removed
+    #make test deep-clean && \
+    # leave git it's needed for Git-Python and check_git_branch_checkout.pl/py
+    #apt-get remove -y make && \
+    #apt-get autoremove -y && \
+    #apt-get clean \
+    #bash-tools/check_docker_clean.sh \
+    # basic test for missing dependencies again
+    #tests/help.sh \
+    '
 
 ADD content/ /
 
